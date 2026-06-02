@@ -45,7 +45,10 @@ const app = html.main(
         html.span("Room"),
         html.input({
           value: name,
-          oninput: (event) => name.set(event.currentTarget.value)
+          oninput: (event: Event) => {
+            const input = event.currentTarget;
+            if (input instanceof HTMLInputElement) name.set(input.value);
+          }
         })
       ),
       html.p(html.strong(Text(greeting)))
@@ -67,4 +70,7 @@ const app = html.main(
   )
 );
 
-dom.mount(document.querySelector("#app"), app);
+const root = document.querySelector("#app");
+if (!root) throw new Error("Missing #app root");
+
+dom.mount(root, app);

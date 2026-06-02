@@ -7,9 +7,14 @@ import {
   signal,
 } from "../src/index.js";
 
-const results = document.querySelector("#results");
-const fixture = document.querySelector("#fixture");
-const tests = [];
+type BrowserTest = {
+  name: string;
+  fn: () => void;
+};
+
+const results = getElement("#results");
+const fixture = getElement("#fixture");
+const tests: BrowserTest[] = [];
 
 test("Text updates only its text node", () => {
   const count = signal(0);
@@ -17,12 +22,12 @@ test("Text updates only its text node", () => {
   const view = html.div(html.p(Text(label)));
 
   dom.mount(fixture, view);
-  const textNode = view.querySelector("p").firstChild;
+  const textNode = getParagraph(view).firstChild;
 
   assertEqual(view.textContent, "Count 0");
   count.set(3);
   assertEqual(view.textContent, "Count 3");
-  assert(textNode === view.querySelector("p").firstChild, "text node should be stable");
+  assert(textNode === getParagraph(view).firstChild, "text node should be stable");
 
   dom.unmount(view);
 });
@@ -57,7 +62,7 @@ test("When mounts and removes real DOM", () => {
 
   assertEqual(view.querySelector("p"), null);
   open.set(true);
-  assertEqual(view.querySelector("p").textContent, "Mounted");
+  assertEqual(getParagraph(view).textContent, "Mounted");
   open.set(false);
   assertEqual(view.querySelector("p"), null);
 
@@ -71,7 +76,7 @@ test("When cleans nested bindings after unmount", () => {
 
   dom.mount(fixture, view);
 
-  const firstParagraph = view.querySelector("p");
+  const firstParagraph = getParagraph(view);
   assertEqual(firstParagraph.textContent, "Kitchen");
 
   open.set(false);
@@ -79,8 +84,8 @@ test("When cleans nested bindings after unmount", () => {
   assertEqual(firstParagraph.textContent, "Kitchen");
 
   open.set(true);
-  assertEqual(view.querySelector("p").textContent, "Office");
-  assert(firstParagraph !== view.querySelector("p"), "remount should create a fresh node");
+  assertEqual(getParagraph(view).textContent, "Office");
+  assert(firstParagraph !== getParagraph(view), "remount should create a fresh node");
 
   dom.unmount(view);
 });
@@ -98,11 +103,11 @@ test("Unmount stops text bindings", () => {
 
 run();
 
-function test(name, fn) {
+function test(name: string, fn: () => void) {
   tests.push({ name, fn });
 }
 
-function run() {
+function run(): void {
   let failed = 0;
 
   for (const { name, fn } of tests) {
@@ -113,7 +118,7 @@ function run() {
       report("pass", `PASS ${name}`);
     } catch (error) {
       failed += 1;
-      report("fail", `FAIL ${name}: ${error.message}`);
+      report("fail", `FAIL ${name}: ${getErrorMessage(error)}`);
     }
   }
 
@@ -122,23 +127,39 @@ function run() {
   }
 }
 
-function assert(value, message) {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
 }
 
-function assertEqual(actual, expected) {
+function assertEqual(actual: unknown, expected: unknown): void {
   if (!Object.is(actual, expected)) {
     throw new Error(`expected ${format(expected)}, got ${format(actual)}`);
   }
 }
 
-function format(value) {
+function format(value: unknown): string {
   return value === null ? "null" : JSON.stringify(value);
 }
 
-function report(className, message) {
+function report(className: string, message: string): void {
   const row = document.createElement("div");
   row.className = className;
   row.textContent = message;
   results.append(row);
+}
+
+function getElement(selector: string): HTMLElement {
+  const element = document.querySelector<HTMLElement>(selector);
+  if (!element) throw new Error(`Missing element: ${selector}`);
+  return element;
+}
+
+function getParagraph(root: ParentNode): HTMLParagraphElement {
+  const paragraph = root.querySelector("p");
+  if (!paragraph) throw new Error("Missing paragraph");
+  return paragraph;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

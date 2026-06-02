@@ -18,24 +18,24 @@ beforeEach(() => {
 });
 
 test("Text updates only its text node", () => {
-  const fixture = document.querySelector("#fixture");
+  const fixture = getFixture();
   const count = signal(0);
   const label = computed(() => `Count ${count.get()}`);
   const view = html.div(html.p(Text(label)));
 
   dom.mount(fixture, view);
-  const textNode = view.querySelector("p").firstChild;
+  const textNode = getParagraph(view).firstChild;
 
   assert.equal(view.textContent, "Count 0");
   count.set(3);
   assert.equal(view.textContent, "Count 3");
-  assert.equal(textNode, view.querySelector("p").firstChild);
+  assert.equal(textNode, getParagraph(view).firstChild);
 
   dom.unmount(view);
 });
 
 test("reactive attributes and styles update in place", () => {
-  const fixture = document.querySelector("#fixture");
+  const fixture = getFixture();
   const disabled = signal(false);
   const color = signal("red");
   const input = html.input({
@@ -58,7 +58,7 @@ test("reactive attributes and styles update in place", () => {
 });
 
 test("When mounts and removes real DOM", () => {
-  const fixture = document.querySelector("#fixture");
+  const fixture = getFixture();
   const open = signal(false);
   const view = html.div(When(open, () => html.p("Mounted")));
 
@@ -66,7 +66,7 @@ test("When mounts and removes real DOM", () => {
 
   assert.equal(view.querySelector("p"), null);
   open.set(true);
-  assert.equal(view.querySelector("p").textContent, "Mounted");
+  assert.equal(getParagraph(view).textContent, "Mounted");
   open.set(false);
   assert.equal(view.querySelector("p"), null);
 
@@ -74,14 +74,14 @@ test("When mounts and removes real DOM", () => {
 });
 
 test("When cleans nested bindings after unmount", () => {
-  const fixture = document.querySelector("#fixture");
+  const fixture = getFixture();
   const open = signal(true);
   const name = signal("Kitchen");
   const view = html.div(When(open, () => html.p(Text(name))));
 
   dom.mount(fixture, view);
 
-  const firstParagraph = view.querySelector("p");
+  const firstParagraph = getParagraph(view);
   assert.equal(firstParagraph.textContent, "Kitchen");
 
   open.set(false);
@@ -89,14 +89,14 @@ test("When cleans nested bindings after unmount", () => {
   assert.equal(firstParagraph.textContent, "Kitchen");
 
   open.set(true);
-  assert.equal(view.querySelector("p").textContent, "Office");
-  assert.notEqual(firstParagraph, view.querySelector("p"));
+  assert.equal(getParagraph(view).textContent, "Office");
+  assert.notEqual(firstParagraph, getParagraph(view));
 
   dom.unmount(view);
 });
 
 test("unmount stops text bindings", () => {
-  const fixture = document.querySelector("#fixture");
+  const fixture = getFixture();
   const count = signal(1);
   const view = html.div(Text(count));
 
@@ -106,3 +106,15 @@ test("unmount stops text bindings", () => {
 
   assert.equal(view.textContent, "1");
 });
+
+function getFixture(): HTMLElement {
+  const fixture = document.querySelector<HTMLElement>("#fixture");
+  assert.ok(fixture);
+  return fixture;
+}
+
+function getParagraph(root: ParentNode): HTMLParagraphElement {
+  const paragraph = root.querySelector("p");
+  assert.ok(paragraph);
+  return paragraph;
+}

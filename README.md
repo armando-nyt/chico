@@ -2,17 +2,17 @@
 
 Initial prototype of a tiny DOM-first reactive UI library.
 
-The library is plain browser JavaScript:
+The library is authored in TypeScript and emits plain browser JavaScript:
 
 - no JSX
-- no transpilation
 - no virtual DOM
-- no build step
+- no runtime renderer
 - no component lifecycle model
+- no compile-time UI magic
 
 ## Example
 
-```js
+```ts
 import { Text, computed, dom, html, signal } from "./src/index.js";
 
 const count = signal(0);
@@ -46,7 +46,7 @@ dom.mount(
 
 Element factories accept either props followed by children or children directly:
 
-```js
+```ts
 html.button({ type: "button" }, "Save")
 html.p("No props needed")
 ```
@@ -78,4 +78,11 @@ With Node available:
 ```sh
 cd ~/dev/ui-library
 mise exec -- npm test
+```
+
+## Build
+
+```sh
+npm run typecheck
+npm run build
 ```
