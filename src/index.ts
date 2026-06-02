@@ -20,8 +20,11 @@ type Observer = {
 export type MaybeReactive<T> = T | Readable<T>;
 export type Child = Node | Readable<unknown> | string | number | boolean | null | undefined | readonly Child[];
 export type ElementChild = Child;
+export type StyleProps = {
+  [K in Lowercase<string> | `--${string}`]?: MaybeReactive<unknown>;
+};
 export type ElementProps = Record<string, unknown> & {
-  style?: Record<string, unknown>;
+  style?: StyleProps;
 };
 
 type ElementArgs = [ElementProps, ...ElementChild[]] | ElementChild[];
@@ -83,13 +86,20 @@ export function computed<T>(fn: () => T): Readable<T> {
     },
     subscribe(subscriber) {
       subscribers.add(subscriber);
-      return () => subscribers.delete(subscriber);
+      return () => {
+        subscribers.delete(subscriber);
+        if (subscribers.size === 0) clearDependencies();
+      };
     }
   };
 
-  function recompute() {
+  function clearDependencies() {
     for (const unsubscribe of dependencies.values()) unsubscribe();
     dependencies.clear();
+  }
+
+  function recompute() {
+    clearDependencies();
 
     const previousObserver = activeObserver;
     activeObserver = {
@@ -373,6 +383,8 @@ function normalizeChildren(children: ElementChild[]): Node[] {
 
     if (Array.isArray(child)) {
       nodes.push(...normalizeChildren([...child]));
+    } else if (child instanceof DocumentFragment) {
+      nodes.push(...child.childNodes);
     } else if (child instanceof Node) {
       nodes.push(child);
     } else if (isReactive(child)) {

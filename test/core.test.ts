@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
+  type ElementProps,
   Text,
   When,
   computed,
@@ -12,6 +13,25 @@ import {
 beforeEach(() => {
   document.body.innerHTML = "<div id=\"fixture\"></div>";
 });
+
+const cssStyleProps = {
+  style: {
+    "background-color": "red",
+    color: "white",
+    "-webkit-line-clamp": 2,
+    "--brand-color": "blue"
+  }
+} satisfies ElementProps;
+
+const jsStyleProps = {
+  style: {
+    // @ts-expect-error CSS property names use CSS spelling, not JS camelCase.
+    backgroundColor: "red"
+  }
+} satisfies ElementProps;
+
+void cssStyleProps;
+void jsStyleProps;
 
 describe("core DOM bindings", () => {
   test("Text updates only its text node", () => {
@@ -92,6 +112,24 @@ describe("core DOM bindings", () => {
     dom.unmount(view);
   });
 
+  test("directly mounted When unmounts its DOM and bindings", () => {
+    const fixture = getFixture();
+    const open = signal(true);
+    const name = signal("Kitchen");
+    const mounted = dom.mount(fixture, When(open, () => html.p(Text(name))));
+
+    const paragraph = getParagraph(fixture);
+    expect(paragraph.textContent).toBe("Kitchen");
+
+    dom.unmount(mounted);
+    name.set("Office");
+    open.set(false);
+    open.set(true);
+
+    expect(fixture.childNodes).toHaveLength(0);
+    expect(paragraph.textContent).toBe("Kitchen");
+  });
+
   test("unmount stops text bindings", () => {
     const fixture = getFixture();
     const count = signal(1);
@@ -102,6 +140,27 @@ describe("core DOM bindings", () => {
     count.set(2);
 
     expect(view.textContent).toBe("1");
+  });
+
+  test("unmount releases computed dependencies", () => {
+    const fixture = getFixture();
+    const count = signal(1);
+    let runs = 0;
+    const label = computed(() => {
+      runs += 1;
+      return `Count ${count.get()}`;
+    });
+    const view = html.div(Text(label));
+
+    dom.mount(fixture, view);
+    expect(view.textContent).toBe("Count 1");
+    expect(runs).toBe(1);
+
+    dom.unmount(view);
+    count.set(2);
+
+    expect(view.textContent).toBe("Count 1");
+    expect(runs).toBe(1);
   });
 });
 
