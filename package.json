@@ -9,9 +9,10 @@
   },
   "scripts": {
     "test": "node --test \"test/*.test.js\"",
-    "dev": "python3 -m http.server 5173"
+    "dev": "vite --host 127.0.0.1 --port 5173"
   },
   "devDependencies": {
-    "jsdom": "^24.1.3"
+    "jsdom": "^24.1.3",
+    "vite": "^8.0.16"
   }
 }

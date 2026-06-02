@@ -53,18 +53,16 @@ html.p("No props needed")
 
 ## Run
 
-Open `demo/index.html` in a browser.
-
-If local module loading is restricted by the browser, serve the folder with any static file server. Python works when available:
+Start the Vite dev server:
 
 ```sh
 cd ~/dev/ui-library
-python3 -m http.server 5173
+npm run dev
 ```
 
 Then open `http://localhost:5173/demo/`.
 
-With Node available:
+If you use `mise`:
 
 ```sh
 cd ~/dev/ui-library
