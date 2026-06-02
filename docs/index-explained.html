@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tiny DOM-First UI - index.js Explained</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172026;
+        background: #f4f6f7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin-bottom: 12px;
+        font-size: 40px;
+        line-height: 1.08;
+      }
+
+      h2 {
+        margin-bottom: 14px;
+        font-size: 26px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      p,
+      li {
+        color: #4c5961;
+        line-height: 1.6;
+      }
+
+      a {
+        color: #12617a;
+      }
+
+      .intro {
+        max-width: 760px;
+        margin-bottom: 28px;
+        font-size: 17px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      nav {
+        position: sticky;
+        top: 20px;
+        padding: 18px;
+        border: 1px solid #d7dee2;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      nav h2 {
+        margin-bottom: 10px;
+        font-size: 15px;
+      }
+
+      nav a {
+        display: block;
+        padding: 6px 0;
+        color: #34454e;
+        text-decoration: none;
+      }
+
+      nav a:hover {
+        color: #12617a;
+      }
+
+      section {
+        margin-bottom: 22px;
+        padding: 22px;
+        border: 1px solid #d7dee2;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .flow div {
+        min-height: 116px;
+        padding: 14px;
+        border: 1px solid #cdd7dc;
+        border-radius: 8px;
+        background: #f9fbfb;
+      }
+
+      .flow strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .note {
+        padding: 14px 16px;
+        border-left: 4px solid #4b8b66;
+        background: #f3faf5;
+      }
+
+      pre {
+        overflow: auto;
+        margin: 14px 0 0;
+        padding: 16px;
+        border-radius: 8px;
+        background: #172026;
+        color: #eef5f7;
+        line-height: 1.5;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+      }
+
+      .inline-code {
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: #e7ecef;
+        color: #172026;
+      }
+
+      @media (max-width: 860px) {
+        main {
+          padding-top: 28px;
+        }
+
+        h1 {
+          font-size: 32px;
+        }
+
+        .layout,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        nav {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tiny DOM-First UI: <span class="inline-code">index.js</span> Explained</h1>
+      <p class="intro">
+        This page is a guided copy of the prototype library source. The core idea is small:
+        DOM helper functions create real nodes, signals hold values, effects wire signals to
+        exact DOM updates, and cleanup callbacks are attached to nodes so removing DOM also
+        removes reactive subscriptions.
+      </p>
+
+      <div class="layout">
+        <nav aria-label="Page sections">
+          <h2>Sections</h2>
+          <a href="#mental-model">Mental model</a>
+          <a href="#globals">Shared internals</a>
+          <a href="#signal">signal</a>
+          <a href="#computed">computed</a>
+          <a href="#effect">effect</a>
+          <a href="#text">Text</a>
+          <a href="#when">When</a>
+          <a href="#dom-lifecycle">mount, unmount, replace</a>
+          <a href="#elements">el, tag, helpers</a>
+          <a href="#props">props, styles, events</a>
+          <a href="#cleanup">cleanup</a>
+          <a href="#utilities">utilities</a>
+          <a href="#full-flow">How it works together</a>
+        </nav>
+
+        <div>
+          <section id="mental-model">
+            <h2>Mental Model</h2>
+            <div class="flow">
+              <div>
+                <strong>1. Create DOM</strong>
+                <p><span class="inline-code">Div(...)</span> and friends call <span class="inline-code">document.createElement</span>. The result is a real browser node.</p>
+              </div>
+              <div>
+                <strong>2. Read signals</strong>
+                <p>When an effect runs, signal reads are tracked. The effect becomes subscribed to the exact signals it used.</p>
+              </div>
+              <div>
+                <strong>3. Update nodes</strong>
+                <p>When a signal changes, subscribers run. Text nodes, props, and styles update directly.</p>
+              </div>
+              <div>
+                <strong>4. Clean on removal</strong>
+                <p><span class="inline-code">unmount</span> walks the DOM tree, runs cleanup callbacks, and removes the nodes.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="globals">
+            <h2>Shared Internals</h2>
+            <p>
+              These two values are the little engine room. <span class="inline-code">activeObserver</span>
+              is the currently running reactive observer. <span class="inline-code">cleanupMap</span>
+              stores cleanup callbacks by DOM node without preventing garbage collection.
+            </p>
+            <pre><code>let activeObserver = null;
+
+const cleanupMap = new WeakMap();</code></pre>
+          </section>
+
+          <section id="signal">
+            <h2>signal(initialValue)</h2>
+            <p>
+              A signal is a small box around a value. <span class="inline-code">get()</span>
+              returns the current value and records a dependency if an effect or computed value
+              is currently running. <span class="inline-code">set()</span> updates the value and
+              calls subscribers. <span class="inline-code">update()</span> is a convenience wrapper
+              for updating from the previous value.
+            </p>
+            <pre><code>export function signal(initialValue) {
+  let value = initialValue;
+  const subscribers = new Set();
+
+  const api = {
+    get() {
+      track(api);
+      return value;
+    },
+    set(nextValue) {
+      if (Object.is(value, nextValue)) return;
+      value = nextValue;
+      for (const subscriber of [...subscribers]) subscriber();
+    },
+    update(fn) {
+      api.set(fn(value));
+    },
+    subscribe(subscriber) {
+      subscribers.add(subscriber);
+      return () =&gt; subscribers.delete(subscriber);
+    }
+  };
+
+  return api;
+}</code></pre>
+            <p class="note">
+              The important move is <span class="inline-code">track(api)</span>. That lets
+              the currently running observer say, "I depend on this signal."
+            </p>
+          </section>
+
+          <section id="computed">
+            <h2>computed(fn)</h2>
+            <p>
+              A computed value is a cached signal-like value derived from other signals.
+              It recomputes lazily: dependencies mark it dirty, but the function only runs
+              again when someone calls <span class="inline-code">get()</span>.
+            </p>
+            <pre><code>export function computed(fn) {
+  let value;
+  let dirty = true;
+  const subscribers = new Set();
+  const dependencies = new Map();
+
+  const api = {
+    get() {
+      track(api);
+      if (dirty) recompute();
+      return value;
+    },
+    subscribe(subscriber) {
+      subscribers.add(subscriber);
+      return () =&gt; subscribers.delete(subscriber);
+    }
+  };
+
+  function recompute() {
+    for (const unsubscribe of dependencies.values()) unsubscribe();
+    dependencies.clear();
+
+    const previousObserver = activeObserver;
+    activeObserver = {
+      depend(source) {
+        if (dependencies.has(source)) return;
+        dependencies.set(
+          source,
+          source.subscribe(() =&gt; {
+            if (dirty) return;
+            dirty = true;
+            for (const subscriber of [...subscribers]) subscriber();
+          })
+        );
+      }
+    };
+
+    try {
+      value = fn();
+      dirty = false;
+    } finally {
+      activeObserver = previousObserver;
+    }
+  }
+
+  return api;
+}</code></pre>
+            <p>
+              The temporary observer inside <span class="inline-code">recompute()</span>
+              watches whichever signals are read while <span class="inline-code">fn()</span>
+              runs. Before each recompute, old dependencies are unsubscribed so conditional
+              computed values do not keep stale subscriptions.
+            </p>
+          </section>
+
+          <section id="effect">
+            <h2>effect(fn)</h2>
+            <p>
+              An effect is the bridge from reactive values to side effects. In this library,
+              those side effects are DOM updates: set a text node, assign a prop, assign a style,
+              or mount/unmount a conditional region.
+            </p>
+            <pre><code>export function effect(fn) {
+  const dependencies = new Map();
+  let stopped = false;
+
+  const observer = {
+    depend(source) {
+      if (dependencies.has(source)) return;
+      dependencies.set(source, source.subscribe(run));
+    }
+  };
+
+  function clearDependencies() {
+    for (const unsubscribe of dependencies.values()) unsubscribe();
+    dependencies.clear();
+  }
+
+  function run() {
+    if (stopped) return;
+    clearDependencies();
+
+    const previousObserver = activeObserver;
+    activeObserver = observer;
+
+    try {
+      fn();
+    } finally {
+      activeObserver = previousObserver;
+    }
+  }
+
+  run();
+
+  return () =&gt; {
+    stopped = true;
+    clearDependencies();
+  };
+}</code></pre>
+            <p>
+              Each run clears and re-collects dependencies. That keeps dynamic reads accurate:
+              if an effect reads signal A on one run and signal B on the next, it stops listening
+              to A and starts listening to B.
+            </p>
+          </section>
+
+          <section id="text">
+            <h2>Text(value)</h2>
+            <p>
+              <span class="inline-code">Text</span> creates a real text node. If the value is
+              reactive, it creates an effect that updates only <span class="inline-code">node.data</span>.
+              No parent, component, or tree re-renders.
+            </p>
+            <pre><code>export function Text(value) {
+  const node = document.createTextNode(String(read(value)));
+
+  if (isReactive(value)) {
+    const stop = effect(() =&gt; {
+      node.data = String(value.get());
+    });
+    onCleanup(node, stop);
+  }
+
+  return node;
+}</code></pre>
+            <p class="note">
+              The cleanup callback is attached to the text node. If that node is unmounted,
+              the effect is stopped automatically.
+            </p>
+          </section>
+
+          <section id="when">
+            <h2>When(condition, render)</h2>
+            <p>
+              <span class="inline-code">When</span> is structural reactivity. It does not hide
+              elements with CSS. It inserts real nodes when truthy and removes them when falsey.
+              The region is bounded by comment anchors.
+            </p>
+            <pre><code>export function When(condition, render) {
+  const start = document.createComment("when:start");
+  const end = document.createComment("when:end");
+  let mountedNodes = [];
+
+  const fragment = document.createDocumentFragment();
+  fragment.append(start, end);
+
+  const stop = effect(() =&gt; {
+    const shouldMount = Boolean(read(condition));
+
+    if (!shouldMount) {
+      clearRegion();
+      return;
+    }
+
+    if (mountedNodes.length &gt; 0) return;
+
+    mountedNodes = normalizeChildren([render()]);
+    end.before(...mountedNodes);
+  });
+
+  onCleanup(start, () =&gt; {
+    stop();
+    clearRegion();
+  });
+
+  return fragment;
+
+  function clearRegion() {
+    for (const node of mountedNodes) unmount(node);
+    mountedNodes = [];
+  }
+}</code></pre>
+            <p>
+              The start comment owns cleanup for the region-level effect. The children own
+              their own nested cleanup. When the region is removed, <span class="inline-code">unmount</span>
+              recursively stops all bindings below it.
+            </p>
+          </section>
+
+          <section id="dom-lifecycle">
+            <h2>mount, unmount, replace</h2>
+            <p>
+              These functions are intentionally thin wrappers around DOM operations. Their
+              value is cleanup discipline: always use <span class="inline-code">unmount</span>
+              when removing library-managed nodes so bindings are disconnected first.
+            </p>
+            <pre><code>export function mount(parent, child) {
+  const nodes = normalizeChildren([child]);
+  parent.append(...nodes);
+  return nodes.length === 1 ? nodes[0] : nodes;
+}
+
+export function unmount(child) {
+  for (const node of normalizeChildren([child])) {
+    cleanupTree(node);
+    node.remove();
+  }
+}
+
+export function replace(parent, oldChild, newChild) {
+  const nodes = normalizeChildren([newChild]);
+  const firstNode = nodes[0] ?? document.createTextNode("");
+
+  parent.insertBefore(firstNode, oldChild);
+  for (const node of nodes.slice(1)) parent.insertBefore(node, oldChild);
+  unmount(oldChild);
+
+  return nodes.length === 1 ? firstNode : nodes;
+}</code></pre>
+          </section>
+
+          <section id="elements">
+            <h2>el, tag, and Element Helpers</h2>
+            <p>
+              <span class="inline-code">el</span> is the general constructor.
+              <span class="inline-code">tag</span> creates convenience helpers like
+              <span class="inline-code">Div</span>, <span class="inline-code">Button</span>,
+              and <span class="inline-code">Input</span>.
+            </p>
+            <pre><code>export function el(tagName, props, ...children) {
+  const node = document.createElement(tagName);
+  applyProps(node, props);
+  node.append(...normalizeChildren(children));
+  return node;
+}
+
+export function tag(tagName) {
+  return (props, ...children) =&gt; el(tagName, props, ...children);
+}
+
+export const Button = tag("button");
+export const Div = tag("div");
+export const H1 = tag("h1");
+export const H2 = tag("h2");
+export const Header = tag("header");
+export const Input = tag("input");
+export const Label = tag("label");
+export const Li = tag("li");
+export const Main = tag("main");
+export const P = tag("p");
+export const Section = tag("section");
+export const Span = tag("span");
+export const Strong = tag("strong");
+export const Ul = tag("ul");</code></pre>
+            <p>
+              This is the pseudo-HTML layer. <span class="inline-code">Div({ className: "card" }, H1(null, "Kitchen"))</span>
+              remains plain JavaScript but avoids noisy <span class="inline-code">document.createElement</span>
+              boilerplate.
+            </p>
+          </section>
+
+          <section id="props">
+            <h2>Props, Styles, and Events</h2>
+            <p>
+              Props are deliberately DOM-shaped. Event props like <span class="inline-code">onclick</span>
+              become browser event listeners. Style objects assign DOM styles. Reactive prop
+              or style values get effects, so only that one property updates.
+            </p>
+            <pre><code>function applyProps(node, props) {
+  if (!props) return;
+
+  for (const [name, value] of Object.entries(props)) {
+    if (name === "style" &amp;&amp; value &amp;&amp; typeof value === "object") {
+      applyStyle(node, value);
+    } else if (name.startsWith("on") &amp;&amp; typeof value === "function") {
+      bindEvent(node, name.slice(2).toLowerCase(), value);
+    } else {
+      bindProp(node, name, value);
+    }
+  }
+}
+
+function applyStyle(node, styles) {
+  for (const [name, value] of Object.entries(styles)) {
+    const assign = (nextValue) =&gt; {
+      node.style[name] = nextValue == null ? "" : String(nextValue);
+    };
+
+    assign(read(value));
+    bindReactive(node, value, () =&gt; assign(value.get()));
+  }
+}
+
+function bindEvent(node, eventName, handler) {
+  node.addEventListener(eventName, handler);
+  onCleanup(node, () =&gt; node.removeEventListener(eventName, handler));
+}
+
+function bindProp(node, name, value) {
+  const assign = (nextValue) =&gt; {
+    if (nextValue === false || nextValue == null) {
+      removeDomValue(node, name);
+      return;
+    }
+
+    if (name in node) {
+      node[name] = nextValue;
+    } else {
+      node.setAttribute(name, String(nextValue));
+    }
+  };
+
+  assign(read(value));
+  bindReactive(node, value, () =&gt; assign(value.get()));
+}
+
+function bindReactive(node, value, update) {
+  if (!isReactive(value)) return;
+  const stop = effect(update);
+  onCleanup(node, stop);
+}
+
+function removeDomValue(node, name) {
+  if (name in node &amp;&amp; typeof node[name] === "boolean") {
+    node[name] = false;
+  } else if (name in node) {
+    node[name] = "";
+  }
+
+  node.removeAttribute(name);
+}</code></pre>
+          </section>
+
+          <section id="cleanup">
+            <h2>Cleanup</h2>
+            <p>
+              Cleanup is node-owned. Any effect or event listener created for a node registers
+              a callback with <span class="inline-code">onCleanup</span>. Removing a parent
+              walks the entire child tree and runs all callbacks.
+            </p>
+            <pre><code>function cleanupTree(node) {
+  const callbacks = cleanupMap.get(node);
+  if (callbacks) {
+    for (const callback of callbacks) callback();
+    cleanupMap.delete(node);
+  }
+
+  for (const child of [...node.childNodes]) cleanupTree(child);
+}
+
+function onCleanup(node, callback) {
+  const callbacks = cleanupMap.get(node) ?? [];
+  callbacks.push(callback);
+  cleanupMap.set(node, callbacks);
+}</code></pre>
+            <p class="note">
+              This is the replacement for a component lifecycle. The DOM node is the ownership
+              boundary; removing it cleans the work attached to it.
+            </p>
+          </section>
+
+          <section id="utilities">
+            <h2>Utilities</h2>
+            <p>
+              These helpers keep the public API small. <span class="inline-code">normalizeChildren</span>
+              turns strings, numbers, arrays, nodes, and reactive values into DOM nodes.
+              <span class="inline-code">read</span> unwraps reactive values. <span class="inline-code">track</span>
+              connects reads to the active observer.
+            </p>
+            <pre><code>function normalizeChildren(children) {
+  const nodes = [];
+
+  for (const child of children.flat(Infinity)) {
+    if (child == null || child === false) continue;
+
+    if (child instanceof Node) {
+      nodes.push(child);
+    } else if (isReactive(child)) {
+      nodes.push(Text(child));
+    } else {
+      nodes.push(document.createTextNode(String(child)));
+    }
+  }
+
+  return nodes;
+}
+
+function read(value) {
+  return isReactive(value) ? value.get() : value;
+}
+
+function isReactive(value) {
+  return value &amp;&amp; typeof value.get === "function" &amp;&amp; typeof value.subscribe === "function";
+}
+
+function track(source) {
+  activeObserver?.depend(source);
+}</code></pre>
+          </section>
+
+          <section id="full-flow">
+            <h2>How It Works Together</h2>
+            <p>
+              Here is the chain for a small example:
+            </p>
+            <pre><code>const count = signal(0);
+const label = computed(() =&gt; `Count: ${count.get()}`);
+
+mount(
+  document.body,
+  Div(null, Text(label))
+);</code></pre>
+            <ol>
+              <li><span class="inline-code">signal(0)</span> creates state with a subscriber set.</li>
+              <li><span class="inline-code">computed(...)</span> creates a lazy derived value. When read, it tracks that it depends on <span class="inline-code">count</span>.</li>
+              <li><span class="inline-code">Text(label)</span> creates a text node and an effect that writes <span class="inline-code">label.get()</span> into that node.</li>
+              <li>Reading <span class="inline-code">label.get()</span> inside the effect subscribes the effect to the computed value.</li>
+              <li>Reading <span class="inline-code">count.get()</span> inside the computed subscribes the computed value to the signal.</li>
+              <li>When <span class="inline-code">count.set(1)</span> runs, the signal marks the computed dirty, then the computed notifies the text effect.</li>
+              <li>The text effect runs again and assigns only <span class="inline-code">textNode.data</span>. No tree render happens.</li>
+              <li>If the text node is unmounted, its cleanup callback stops the effect and unsubscribes from the computed value.</li>
+            </ol>
+            <p>
+              That is the whole pattern repeated across the library: create real DOM once,
+              bind exact reactive updates to exact nodes, and attach cleanup to the nodes that own the work.
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

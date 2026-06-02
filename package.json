@@ -1,0 +1,17 @@
+{
+  "name": "tiny-dom-first-ui",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "A tiny DOM-first reactive UI library prototype.",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "dev": "python3 -m http.server 5173"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}
