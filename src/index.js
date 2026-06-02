@@ -186,31 +186,66 @@ export function replace(parent, oldChild, newChild) {
   return nodes.length === 1 ? firstNode : nodes;
 }
 
-export function el(tagName, props, ...children) {
-  const node = document.createElement(tagName);
+export const dom = {
+  mount,
+  unmount,
+  replace
+};
+
+export const html = createElementNamespace((tagName) => document.createElement(tagName));
+
+export const svg = createElementNamespace((tagName) =>
+  document.createElementNS("http://www.w3.org/2000/svg", tagName)
+);
+
+export function createElement(tagName, ...args) {
+  return createElementFrom(document.createElement(tagName), args);
+}
+
+export function createElementNS(namespaceURI, tagName, ...args) {
+  return createElementFrom(document.createElementNS(namespaceURI, tagName), args);
+}
+
+function createElementFrom(node, args) {
+  const [props, children] = splitElementArgs(args);
   applyProps(node, props);
   node.append(...normalizeChildren(children));
   return node;
 }
 
-export function tag(tagName) {
-  return (props, ...children) => el(tagName, props, ...children);
+function createElementNamespace(createNode) {
+  const factories = new Map();
+
+  return new Proxy(Object.create(null), {
+    get(_, tagName) {
+      if (typeof tagName !== "string") return undefined;
+
+      if (!factories.has(tagName)) {
+        factories.set(tagName, (...args) => createElementFrom(createNode(tagName), args));
+      }
+
+      return factories.get(tagName);
+    }
+  });
 }
 
-export const Button = tag("button");
-export const Div = tag("div");
-export const H1 = tag("h1");
-export const H2 = tag("h2");
-export const Header = tag("header");
-export const Input = tag("input");
-export const Label = tag("label");
-export const Li = tag("li");
-export const Main = tag("main");
-export const P = tag("p");
-export const Section = tag("section");
-export const Span = tag("span");
-export const Strong = tag("strong");
-export const Ul = tag("ul");
+function splitElementArgs(args) {
+  if (isPropsObject(args[0])) {
+    return [args[0], args.slice(1)];
+  }
+
+  return [null, args];
+}
+
+function isPropsObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    !(value instanceof Node) &&
+    !isReactive(value)
+  );
+}
 
 function applyProps(node, props) {
   if (!props) return;

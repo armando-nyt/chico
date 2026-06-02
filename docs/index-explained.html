@@ -193,8 +193,8 @@
           <a href="#effect">effect</a>
           <a href="#text">Text</a>
           <a href="#when">When</a>
-          <a href="#dom-lifecycle">mount, unmount, replace</a>
-          <a href="#elements">el, tag, helpers</a>
+          <a href="#dom-lifecycle">dom lifecycle</a>
+          <a href="#elements">html and svg factories</a>
           <a href="#props">props, styles, events</a>
           <a href="#cleanup">cleanup</a>
           <a href="#utilities">utilities</a>
@@ -207,7 +207,7 @@
             <div class="flow">
               <div>
                 <strong>1. Create DOM</strong>
-                <p><span class="inline-code">Div(...)</span> and friends call <span class="inline-code">document.createElement</span>. The result is a real browser node.</p>
+                <p><span class="inline-code">html.div(...)</span> and friends call <span class="inline-code">document.createElement</span>. The result is a real browser node.</p>
               </div>
               <div>
                 <strong>2. Read signals</strong>
@@ -219,7 +219,7 @@
               </div>
               <div>
                 <strong>4. Clean on removal</strong>
-                <p><span class="inline-code">unmount</span> walks the DOM tree, runs cleanup callbacks, and removes the nodes.</p>
+                <p><span class="inline-code">dom.unmount</span> walks the DOM tree, runs cleanup callbacks, and removes the nodes.</p>
               </div>
             </div>
           </section>
@@ -457,16 +457,16 @@ const cleanupMap = new WeakMap();</code></pre>
 }</code></pre>
             <p>
               The start comment owns cleanup for the region-level effect. The children own
-              their own nested cleanup. When the region is removed, <span class="inline-code">unmount</span>
+              their own nested cleanup. When the region is removed, <span class="inline-code">dom.unmount</span>
               recursively stops all bindings below it.
             </p>
           </section>
 
           <section id="dom-lifecycle">
-            <h2>mount, unmount, replace</h2>
+            <h2>dom.mount, dom.unmount, dom.replace</h2>
             <p>
               These functions are intentionally thin wrappers around DOM operations. Their
-              value is cleanup discipline: always use <span class="inline-code">unmount</span>
+              value is cleanup discipline: always use <span class="inline-code">dom.unmount</span>
               when removing library-managed nodes so bindings are disconnected first.
             </p>
             <pre><code>export function mount(parent, child) {
@@ -491,46 +491,59 @@ export function replace(parent, oldChild, newChild) {
   unmount(oldChild);
 
   return nodes.length === 1 ? firstNode : nodes;
-}</code></pre>
+}
+
+export const dom = {
+  mount,
+  unmount,
+  replace
+};</code></pre>
           </section>
 
           <section id="elements">
-            <h2>el, tag, and Element Helpers</h2>
+            <h2>html and svg Factories</h2>
             <p>
-              <span class="inline-code">el</span> is the general constructor.
-              <span class="inline-code">tag</span> creates convenience helpers like
-              <span class="inline-code">Div</span>, <span class="inline-code">Button</span>,
-              and <span class="inline-code">Input</span>.
+              <span class="inline-code">html</span> and <span class="inline-code">svg</span>
+              are namespace objects backed by a <span class="inline-code">Proxy</span>.
+              Accessing <span class="inline-code">html.div</span> creates a tiny factory
+              for a real element without exporting every tag name at the top level.
             </p>
-            <pre><code>export function el(tagName, props, ...children) {
-  const node = document.createElement(tagName);
+            <pre><code>export const html = createElementNamespace((tagName) =&gt; document.createElement(tagName));
+
+export const svg = createElementNamespace((tagName) =&gt;
+  document.createElementNS("http://www.w3.org/2000/svg", tagName)
+);
+
+export function createElement(tagName, ...args) {
+  return createElementFrom(document.createElement(tagName), args);
+}
+
+function createElementFrom(node, args) {
+  const [props, children] = splitElementArgs(args);
   applyProps(node, props);
   node.append(...normalizeChildren(children));
   return node;
 }
 
-export function tag(tagName) {
-  return (props, ...children) =&gt; el(tagName, props, ...children);
-}
+function createElementNamespace(createNode) {
+  const factories = new Map();
 
-export const Button = tag("button");
-export const Div = tag("div");
-export const H1 = tag("h1");
-export const H2 = tag("h2");
-export const Header = tag("header");
-export const Input = tag("input");
-export const Label = tag("label");
-export const Li = tag("li");
-export const Main = tag("main");
-export const P = tag("p");
-export const Section = tag("section");
-export const Span = tag("span");
-export const Strong = tag("strong");
-export const Ul = tag("ul");</code></pre>
+  return new Proxy(Object.create(null), {
+    get(_, tagName) {
+      if (typeof tagName !== "string") return undefined;
+
+      if (!factories.has(tagName)) {
+        factories.set(tagName, (...args) =&gt; createElementFrom(createNode(tagName), args));
+      }
+
+      return factories.get(tagName);
+    }
+  });
+}</code></pre>
             <p>
-              This is the pseudo-HTML layer. <span class="inline-code">Div({ className: "card" }, H1(null, "Kitchen"))</span>
-              remains plain JavaScript but avoids noisy <span class="inline-code">document.createElement</span>
-              boilerplate.
+              This is the element creation layer. <span class="inline-code">html.div({ className: "card" }, html.h1("Kitchen"))</span>
+              remains plain JavaScript, keeps the DOM visible, and avoids noisy
+              <span class="inline-code">document.createElement</span> boilerplate.
             </p>
           </section>
 
@@ -681,9 +694,9 @@ function track(source) {
             <pre><code>const count = signal(0);
 const label = computed(() =&gt; `Count: ${count.get()}`);
 
-mount(
+dom.mount(
   document.body,
-  Div(null, Text(label))
+  html.div(Text(label))
 );</code></pre>
             <ol>
               <li><span class="inline-code">signal(0)</span> creates state with a subscriber set.</li>

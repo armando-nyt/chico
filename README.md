@@ -13,18 +13,18 @@ The library is plain browser JavaScript:
 ## Example
 
 ```js
-import { Button, Div, H1, Text, computed, signal, mount } from "./src/index.js";
+import { Text, computed, dom, html, signal } from "./src/index.js";
 
 const count = signal(0);
 const label = computed(() => `Count: ${count.get()}`);
 
-mount(
+dom.mount(
   document.body,
-  Div(
+  html.div(
     { className: "card" },
-    H1(null, "Counter"),
-    Div(null, Text(label)),
-    Button({ onclick: () => count.update((n) => n + 1) }, "Increment")
+    html.h1("Counter"),
+    html.div(Text(label)),
+    html.button({ onclick: () => count.update((n) => n + 1) }, "Increment")
   )
 );
 ```
@@ -36,12 +36,20 @@ mount(
 - `effect(fn)` runs a reactive function and returns a stop function.
 - `Text(value)` creates a text node. Reactive values update only that text node.
 - `When(condition, render)` creates a comment-anchored conditional region. False removes DOM and cleans bindings.
-- `mount(parent, child)` appends DOM.
-- `unmount(child)` removes DOM and cleans bindings below it.
-- `replace(parent, oldChild, newChild)` replaces DOM with cleanup.
-- `el(tagName, props, ...children)` creates an element.
-- `tag(tagName)` creates a DOM helper.
-- Built-in helpers include `Div`, `Button`, `H1`, `P`, `Span`, `Input`, and others.
+- `html.*` creates HTML elements with real DOM nodes, for example `html.div(...)`.
+- `svg.*` creates SVG elements with real DOM nodes, for example `svg.circle(...)`.
+- `dom.mount(parent, child)` appends DOM.
+- `dom.unmount(child)` removes DOM and cleans bindings below it.
+- `dom.replace(parent, oldChild, newChild)` replaces DOM with cleanup.
+- `createElement(tagName, ...args)` creates an HTML element directly.
+- `createElementNS(namespaceURI, tagName, ...args)` creates a namespaced element directly.
+
+Element factories accept either props followed by children or children directly:
+
+```js
+html.button({ type: "button" }, "Save")
+html.p("No props needed")
+```
 
 ## Run
 

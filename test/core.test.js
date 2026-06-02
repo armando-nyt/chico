@@ -3,15 +3,12 @@ import { beforeEach, test } from "node:test";
 import { JSDOM } from "jsdom";
 
 import {
-  Div,
-  Input,
-  P,
   Text,
   When,
   computed,
-  mount,
+  dom,
+  html,
   signal,
-  unmount
 } from "../src/index.js";
 
 beforeEach(() => {
@@ -24,9 +21,9 @@ test("Text updates only its text node", () => {
   const fixture = document.querySelector("#fixture");
   const count = signal(0);
   const label = computed(() => `Count ${count.get()}`);
-  const view = Div(null, P(null, Text(label)));
+  const view = html.div(html.p(Text(label)));
 
-  mount(fixture, view);
+  dom.mount(fixture, view);
   const textNode = view.querySelector("p").firstChild;
 
   assert.equal(view.textContent, "Count 0");
@@ -34,19 +31,19 @@ test("Text updates only its text node", () => {
   assert.equal(view.textContent, "Count 3");
   assert.equal(textNode, view.querySelector("p").firstChild);
 
-  unmount(view);
+  dom.unmount(view);
 });
 
 test("reactive attributes and styles update in place", () => {
   const fixture = document.querySelector("#fixture");
   const disabled = signal(false);
   const color = signal("red");
-  const input = Input({
+  const input = html.input({
     disabled,
     style: { color }
   });
 
-  mount(fixture, input);
+  dom.mount(fixture, input);
 
   assert.equal(input.disabled, false);
   assert.equal(input.style.color, "red");
@@ -57,15 +54,15 @@ test("reactive attributes and styles update in place", () => {
   assert.equal(input.disabled, true);
   assert.equal(input.style.color, "blue");
 
-  unmount(input);
+  dom.unmount(input);
 });
 
 test("When mounts and removes real DOM", () => {
   const fixture = document.querySelector("#fixture");
   const open = signal(false);
-  const view = Div(null, When(open, () => P(null, "Mounted")));
+  const view = html.div(When(open, () => html.p("Mounted")));
 
-  mount(fixture, view);
+  dom.mount(fixture, view);
 
   assert.equal(view.querySelector("p"), null);
   open.set(true);
@@ -73,16 +70,16 @@ test("When mounts and removes real DOM", () => {
   open.set(false);
   assert.equal(view.querySelector("p"), null);
 
-  unmount(view);
+  dom.unmount(view);
 });
 
 test("When cleans nested bindings after unmount", () => {
   const fixture = document.querySelector("#fixture");
   const open = signal(true);
   const name = signal("Kitchen");
-  const view = Div(null, When(open, () => P(null, Text(name))));
+  const view = html.div(When(open, () => html.p(Text(name))));
 
-  mount(fixture, view);
+  dom.mount(fixture, view);
 
   const firstParagraph = view.querySelector("p");
   assert.equal(firstParagraph.textContent, "Kitchen");
@@ -95,16 +92,16 @@ test("When cleans nested bindings after unmount", () => {
   assert.equal(view.querySelector("p").textContent, "Office");
   assert.notEqual(firstParagraph, view.querySelector("p"));
 
-  unmount(view);
+  dom.unmount(view);
 });
 
 test("unmount stops text bindings", () => {
   const fixture = document.querySelector("#fixture");
   const count = signal(1);
-  const view = Div(null, Text(count));
+  const view = html.div(Text(count));
 
-  mount(fixture, view);
-  unmount(view);
+  dom.mount(fixture, view);
+  dom.unmount(view);
   count.set(2);
 
   assert.equal(view.textContent, "1");
