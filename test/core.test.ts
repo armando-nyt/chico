@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import { beforeEach, test } from "node:test";
-import { JSDOM } from "jsdom";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   Text,
@@ -12,109 +10,109 @@ import {
 } from "../src/index.js";
 
 beforeEach(() => {
-  const dom = new JSDOM("<!doctype html><body><div id=\"fixture\"></div></body>");
-  globalThis.document = dom.window.document;
-  globalThis.Node = dom.window.Node;
+  document.body.innerHTML = "<div id=\"fixture\"></div>";
 });
 
-test("Text updates only its text node", () => {
-  const fixture = getFixture();
-  const count = signal(0);
-  const label = computed(() => `Count ${count.get()}`);
-  const view = html.div(html.p(Text(label)));
+describe("core DOM bindings", () => {
+  test("Text updates only its text node", () => {
+    const fixture = getFixture();
+    const count = signal(0);
+    const label = computed(() => `Count ${count.get()}`);
+    const view = html.div(html.p(Text(label)));
 
-  dom.mount(fixture, view);
-  const textNode = getParagraph(view).firstChild;
+    dom.mount(fixture, view);
+    const textNode = getParagraph(view).firstChild;
 
-  assert.equal(view.textContent, "Count 0");
-  count.set(3);
-  assert.equal(view.textContent, "Count 3");
-  assert.equal(textNode, getParagraph(view).firstChild);
+    expect(view.textContent).toBe("Count 0");
+    count.set(3);
+    expect(view.textContent).toBe("Count 3");
+    expect(textNode).toBe(getParagraph(view).firstChild);
 
-  dom.unmount(view);
-});
-
-test("reactive attributes and styles update in place", () => {
-  const fixture = getFixture();
-  const disabled = signal(false);
-  const color = signal("red");
-  const input = html.input({
-    disabled,
-    style: { color }
+    dom.unmount(view);
   });
 
-  dom.mount(fixture, input);
+  test("reactive attributes and styles update in place", () => {
+    const fixture = getFixture();
+    const disabled = signal(false);
+    const color = signal("red");
+    const input = html.input({
+      disabled,
+      style: { color }
+    });
 
-  assert.equal(input.disabled, false);
-  assert.equal(input.style.color, "red");
+    dom.mount(fixture, input);
 
-  disabled.set(true);
-  color.set("blue");
+    expect(input.disabled).toBe(false);
+    expect(input.style.color).toBe("red");
 
-  assert.equal(input.disabled, true);
-  assert.equal(input.style.color, "blue");
+    disabled.set(true);
+    color.set("blue");
 
-  dom.unmount(input);
-});
+    expect(input.disabled).toBe(true);
+    expect(input.style.color).toBe("blue");
 
-test("When mounts and removes real DOM", () => {
-  const fixture = getFixture();
-  const open = signal(false);
-  const view = html.div(When(open, () => html.p("Mounted")));
+    dom.unmount(input);
+  });
 
-  dom.mount(fixture, view);
+  test("When mounts and removes real DOM", () => {
+    const fixture = getFixture();
+    const open = signal(false);
+    const view = html.div(When(open, () => html.p("Mounted")));
 
-  assert.equal(view.querySelector("p"), null);
-  open.set(true);
-  assert.equal(getParagraph(view).textContent, "Mounted");
-  open.set(false);
-  assert.equal(view.querySelector("p"), null);
+    dom.mount(fixture, view);
 
-  dom.unmount(view);
-});
+    expect(view.querySelector("p")).toBeNull();
+    open.set(true);
+    expect(getParagraph(view).textContent).toBe("Mounted");
+    open.set(false);
+    expect(view.querySelector("p")).toBeNull();
 
-test("When cleans nested bindings after unmount", () => {
-  const fixture = getFixture();
-  const open = signal(true);
-  const name = signal("Kitchen");
-  const view = html.div(When(open, () => html.p(Text(name))));
+    dom.unmount(view);
+  });
 
-  dom.mount(fixture, view);
+  test("When cleans nested bindings after unmount", () => {
+    const fixture = getFixture();
+    const open = signal(true);
+    const name = signal("Kitchen");
+    const view = html.div(When(open, () => html.p(Text(name))));
 
-  const firstParagraph = getParagraph(view);
-  assert.equal(firstParagraph.textContent, "Kitchen");
+    dom.mount(fixture, view);
 
-  open.set(false);
-  name.set("Office");
-  assert.equal(firstParagraph.textContent, "Kitchen");
+    const firstParagraph = getParagraph(view);
+    expect(firstParagraph.textContent).toBe("Kitchen");
 
-  open.set(true);
-  assert.equal(getParagraph(view).textContent, "Office");
-  assert.notEqual(firstParagraph, getParagraph(view));
+    open.set(false);
+    name.set("Office");
+    expect(firstParagraph.textContent).toBe("Kitchen");
 
-  dom.unmount(view);
-});
+    open.set(true);
+    expect(getParagraph(view).textContent).toBe("Office");
+    expect(firstParagraph).not.toBe(getParagraph(view));
 
-test("unmount stops text bindings", () => {
-  const fixture = getFixture();
-  const count = signal(1);
-  const view = html.div(Text(count));
+    dom.unmount(view);
+  });
 
-  dom.mount(fixture, view);
-  dom.unmount(view);
-  count.set(2);
+  test("unmount stops text bindings", () => {
+    const fixture = getFixture();
+    const count = signal(1);
+    const view = html.div(Text(count));
 
-  assert.equal(view.textContent, "1");
+    dom.mount(fixture, view);
+    dom.unmount(view);
+    count.set(2);
+
+    expect(view.textContent).toBe("1");
+  });
 });
 
 function getFixture(): HTMLElement {
   const fixture = document.querySelector<HTMLElement>("#fixture");
-  assert.ok(fixture);
+  if (!fixture) throw new Error("Missing #fixture");
   return fixture;
 }
 
 function getParagraph(root: ParentNode): HTMLParagraphElement {
   const paragraph = root.querySelector("p");
-  assert.ok(paragraph);
+  if (!paragraph) throw new Error("Missing paragraph");
   return paragraph;
 }
