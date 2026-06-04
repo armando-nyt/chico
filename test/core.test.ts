@@ -5,9 +5,11 @@ import {
   Text,
   When,
   computed,
+  createElementNS,
   dom,
   html,
   signal,
+  svg,
 } from "../src/index.js";
 
 beforeEach(() => {
@@ -161,6 +163,149 @@ describe("core DOM bindings", () => {
 
     expect(view.textContent).toBe("Count 1");
     expect(runs).toBe(1);
+  });
+
+  test("computed switches dependencies and releases stale sources", () => {
+    const useFirst = signal(true);
+    const first = signal("first");
+    const second = signal("second");
+    let runs = 0;
+    const label = computed(() => {
+      runs += 1;
+      return useFirst.get() ? first.get() : second.get();
+    });
+
+    expect(label.get()).toBe("first");
+    expect(runs).toBe(1);
+
+    useFirst.set(false);
+    expect(label.get()).toBe("second");
+    expect(runs).toBe(2);
+
+    first.set("stale");
+    expect(label.get()).toBe("second");
+    expect(runs).toBe(2);
+
+    second.set("fresh");
+    expect(label.get()).toBe("fresh");
+    expect(runs).toBe(3);
+  });
+
+  test("event listeners are removed on unmount", () => {
+    const fixture = getFixture();
+    let clicks = 0;
+    const button = html.button({ onclick: () => clicks += 1 }, "Click");
+
+    dom.mount(fixture, button);
+    button.click();
+    expect(clicks).toBe(1);
+
+    dom.unmount(button);
+    button.click();
+    expect(clicks).toBe(1);
+  });
+
+  test("reactive props and styles remove nullish and false values", () => {
+    const fixture = getFixture();
+    const title = signal<string | null>("Ready");
+    const hidden = signal(false);
+    const color = signal<string | null>("red");
+    const view = html.div({
+      hidden,
+      title,
+      style: { color }
+    });
+
+    dom.mount(fixture, view);
+
+    expect(view.hidden).toBe(false);
+    expect(view.getAttribute("title")).toBe("Ready");
+    expect(view.style.color).toBe("red");
+
+    hidden.set(true);
+    title.set(null);
+    color.set(null);
+
+    expect(view.hidden).toBe(true);
+    expect(view.hasAttribute("title")).toBe(false);
+    expect(view.style.color).toBe("");
+
+    hidden.set(false);
+    expect(view.hidden).toBe(false);
+    expect(view.hasAttribute("hidden")).toBe(false);
+
+    dom.unmount(view);
+  });
+
+  test("normalizes nested arrays and skips empty children", () => {
+    const view = html.div(
+      "A",
+      [null, false, ["B", html.span("C")]],
+      undefined,
+      true,
+      4
+    );
+
+    expect(view.childNodes).toHaveLength(5);
+    expect(view.textContent).toBe("ABCtrue4");
+    expect(view.querySelector("span")?.textContent).toBe("C");
+  });
+
+  test("dom.replace swaps nodes and cleans old bindings", () => {
+    const fixture = getFixture();
+    const value = signal("old");
+    const oldChild = html.p(Text(value));
+
+    dom.mount(fixture, oldChild);
+    const replacement = html.div("new");
+    const returned = dom.replace(fixture, oldChild, replacement);
+
+    expect(returned).toBe(replacement);
+    expect(fixture.textContent).toBe("new");
+
+    value.set("stale");
+    expect(oldChild.textContent).toBe("old");
+  });
+
+  test("dom.replace supports multiple replacement children", () => {
+    const fixture = getFixture();
+    const oldChild = html.p("old");
+
+    dom.mount(fixture, oldChild);
+    const returned = dom.replace(fixture, oldChild, [html.span("A"), "B"]);
+
+    expect(Array.isArray(returned)).toBe(true);
+    expect(fixture.childNodes).toHaveLength(2);
+    expect(fixture.textContent).toBe("AB");
+  });
+
+  test("svg namespace factories create SVG nodes and bind attributes", () => {
+    const fixture = getFixture();
+    const radius = signal(10);
+    const icon = svg.svg(
+      { viewBox: "0 0 20 20" },
+      svg.circle({ cx: 10, cy: 10, r: radius })
+    );
+
+    dom.mount(fixture, icon);
+    const circle = icon.querySelector("circle");
+
+    expect(icon.namespaceURI).toBe("http://www.w3.org/2000/svg");
+    expect(circle?.namespaceURI).toBe("http://www.w3.org/2000/svg");
+    expect(circle?.getAttribute("r")).toBe("10");
+
+    radius.set(4);
+    expect(circle?.getAttribute("r")).toBe("4");
+
+    dom.unmount(icon);
+  });
+
+  test("createElementNS supports custom namespaces", () => {
+    const node = createElementNS("urn:example", "thing", { id: "custom" });
+
+    expect(node.namespaceURI).toBe("urn:example");
+    expect(node.tagName).toBe("thing");
+    expect(node.getAttribute("id")).toBe("custom");
   });
 });
 
