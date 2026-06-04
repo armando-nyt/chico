@@ -16,17 +16,34 @@ The library is authored in TypeScript and emits plain browser JavaScript:
 import { Text, computed, dom, html, signal } from "./src/index.js";
 
 const count = signal(0);
-const label = computed(() => `Count: ${count.get()}`);
+const countLabel = computed(() => `Count: ${count.get()}`);
 
 dom.mount(
   document.body,
   html.div(
     { className: "card" },
     html.h1("Counter"),
-    html.div(Text(label)),
+    html.div(Text(countLabel)),
     html.button({ onclick: () => count.update((n) => n + 1) }, "Increment")
   )
 );
+```
+
+## Naming convention
+
+These names are only convention. chico does not inspect variable names or give them runtime meaning.
+
+- Signals use simple domain names, for example `count`, `room`, or `panelOpen`.
+- Computed values use purpose-first names, for example `countLabel`, `panelTitle`, or `panelStatus`.
+- Use `From...` only when the dependency is simple and useful to call out, for example `labelFromCount`.
+- Element-producing view functions use PascalCase, for example `CounterPanel()` or `PanelRegion()`.
+
+That keeps element creation readable without adding magic:
+
+```ts
+html.input({ value: room })
+html.p(Text(panelTitle))
+When(panelOpen, () => PanelRegion())
 ```
 
 ## API

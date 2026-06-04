@@ -69,6 +69,37 @@ html.div(
 )
 ```
 
+## Naming Reactive Values and Views
+
+Variable names are only convention. chico does not inspect names or give them runtime meaning.
+Examples should make the role of each value easy to scan without implying magic:
+
+```ts
+const count = signal(0);
+const room = signal("Kitchen");
+const panelOpen = signal(true);
+
+const countLabel = computed(() => `Count: ${count.get()}`);
+const panelTitle = computed(() => `${room.get()} panel`);
+const panelStatus = computed(() => (panelOpen.get() ? "mounted" : "unmounted"));
+
+function PanelRegion(): HTMLElement {
+  return html.section(
+    html.h2(Text(panelTitle)),
+    html.p("Status: ", Text(panelStatus))
+  );
+}
+```
+
+Recommended convention:
+
+- Signals use simple domain names: `count`, `room`, `panelOpen`.
+- Computed values use purpose-first names: `countLabel`, `panelTitle`, `panelStatus`.
+- `From...` names are optional for simple derivations: `labelFromCount`, `titleFromRoom`.
+- Element-producing view functions use PascalCase: `CounterPanel()`, `PanelRegion()`.
+
+This keeps call sites readable without adding syntax, sigils, or mandatory naming rules.
+
 Benefits:
 
 - No manual registration of elements.

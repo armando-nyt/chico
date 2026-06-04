@@ -8,12 +8,12 @@ import {
 } from "../src/index.js";
 
 const count = signal(0);
-const isOpen = signal(true);
-const name = signal("Kitchen");
+const panelOpen = signal(true);
+const room = signal("Kitchen");
 
 const countLabel = computed(() => `Count: ${count.get()}`);
-const status = computed(() => (isOpen.get() ? "Mounted" : "Unmounted"));
-const greeting = computed(() => `${name.get()} panel`);
+const panelStatus = computed(() => (panelOpen.get() ? "Mounted" : "Unmounted"));
+const panelTitle = computed(() => `${room.get()} panel`);
 
 const app = html.main(
   { className: "shell" },
@@ -44,24 +44,24 @@ const app = html.main(
         { className: "field" },
         html.span("Room"),
         html.input({
-          value: name,
+          value: room,
           oninput: (event: Event) => {
             const input = event.currentTarget;
-            if (input instanceof HTMLInputElement) name.set(input.value);
+            if (input instanceof HTMLInputElement) room.set(input.value);
           }
         })
       ),
-      html.p(html.strong(Text(greeting)))
+      html.p(html.strong(Text(panelTitle)))
     ),
     html.div(
       { className: "panel wide" },
       html.h2("Conditional Region"),
-      html.p("Status: ", Text(status)),
-      html.button({ onclick: () => isOpen.update((value) => !value) }, "Toggle region"),
-      When(isOpen, () =>
+      html.p("Status: ", Text(panelStatus)),
+      html.button({ onclick: () => panelOpen.update((value) => !value) }, "Toggle region"),
+      When(panelOpen, () =>
         html.div(
           { className: "mounted-region" },
-          html.h2(Text(greeting)),
+          html.h2(Text(panelTitle)),
           html.p("This block is inserted and removed from the DOM."),
           html.p("Its nested text binding is cleaned up when unmounted.")
         )
