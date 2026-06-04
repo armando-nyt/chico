@@ -10,6 +10,6 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "demo/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "demo/**/*.ts", "docs-site/**/*.ts", "test/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

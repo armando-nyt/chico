@@ -282,19 +282,26 @@ describe("core DOM bindings", () => {
   test("svg namespace factories create SVG nodes and bind attributes", () => {
     const fixture = getFixture();
     const radius = signal(10);
+    const x = signal(1);
     const icon = svg.svg(
       { viewBox: "0 0 20 20" },
+      svg.rect({ x, y: 1, width: 18, height: 18 }),
       svg.circle({ cx: 10, cy: 10, r: radius })
     );
 
     dom.mount(fixture, icon);
+    const rect = icon.querySelector("rect");
     const circle = icon.querySelector("circle");
 
     expect(icon.namespaceURI).toBe("http://www.w3.org/2000/svg");
+    expect(rect?.getAttribute("x")).toBe("1");
+    expect(rect?.getAttribute("width")).toBe("18");
     expect(circle?.namespaceURI).toBe("http://www.w3.org/2000/svg");
     expect(circle?.getAttribute("r")).toBe("10");
 
+    x.set(2);
     radius.set(4);
+    expect(rect?.getAttribute("x")).toBe("2");
     expect(circle?.getAttribute("r")).toBe("4");
 
     dom.unmount(icon);
