@@ -14,6 +14,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "docs:build": "vite build --config vite.docs.config.ts",
+    "docs:dev": "vite --config vite.docs.config.ts --host 127.0.0.1 --port 5174",
+    "docs:preview": "vite preview --config vite.docs.config.ts --host 127.0.0.1 --port 4174",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
