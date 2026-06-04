@@ -1,6 +1,6 @@
-# Tiny DOM-First UI
+# chico
 
-Initial prototype of a tiny DOM-first reactive UI library.
+A tiny DOM-first reactive UI library.
 
 The library is authored in TypeScript and emits plain browser JavaScript:
 
@@ -56,7 +56,7 @@ html.p("No props needed")
 Start the Vite dev server:
 
 ```sh
-cd ~/dev/ui-library
+cd ~/dev/chico
 npm run dev
 ```
 
@@ -65,7 +65,7 @@ Then open `http://localhost:5173/demo/`.
 If you use `mise`:
 
 ```sh
-cd ~/dev/ui-library
+cd ~/dev/chico
 mise exec -- npm run dev
 ```
 
@@ -76,7 +76,7 @@ Open `test/index.html` in a browser. The tests run in the page and report pass/f
 With Node available:
 
 ```sh
-cd ~/dev/ui-library
+cd ~/dev/chico
 mise exec -- npm test
 ```
 

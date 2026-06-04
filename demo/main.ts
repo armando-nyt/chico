@@ -20,7 +20,7 @@ const app = html.main(
   html.header(
     { className: "hero" },
     html.div(
-      html.h1("Tiny DOM-First UI"),
+      html.h1("chico"),
       html.p("Plain JavaScript helpers for real DOM nodes and fine-grained bindings.")
     )
   ),
