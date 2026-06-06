@@ -5,7 +5,8 @@ import {
   dom,
   html,
   signal,
-  svg
+  svg,
+  type Readable
 } from "../src/index.js";
 
 type ApiItem = {
@@ -19,13 +20,6 @@ type Pattern = {
   body: string;
   code: string;
 };
-
-const count = signal(0);
-const room = signal("Kitchen");
-const panelOpen = signal(true);
-const countLabel = computed(() => `Count: ${count.get()}`);
-const panelTitle = computed(() => `${room.get()} panel`);
-const panelStatus = computed(() => (panelOpen.get() ? "mounted" : "unmounted"));
 
 const appElement = html.div(
   { className: "site-shell" },
@@ -86,6 +80,9 @@ function HeroSection(): HTMLElement {
 }
 
 function ExampleSection(): HTMLElement {
+  const count = signal(0);
+  const countLabel = computed(() => `Count: ${count.get()}`);
+
   return html.section(
     { id: "example", className: "section example-section" },
     SectionIntro(
@@ -178,6 +175,11 @@ function ApiSection(): HTMLElement {
 }
 
 function PatternsSection(): HTMLElement {
+  const room = signal("Kitchen");
+  const panelOpen = signal(true);
+  const panelTitle = computed(() => `${room.get()} panel`);
+  const panelStatus = computed(() => (panelOpen.get() ? "mounted" : "unmounted"));
+
   const patterns: Pattern[] = [
     {
       title: "Reactive Text",
@@ -197,12 +199,12 @@ function PatternsSection(): HTMLElement {
     {
       title: "Conditional DOM",
       body: "When removes actual nodes and stops nested bindings when the condition turns false.",
-      code: "When(panelOpen, () => PanelRegion())"
+      code: "When(panelOpen, () => PanelRegion(panelTitle))"
     },
     {
       title: "Naming Roles",
       body: "Signals stay simple; computed values and view functions are named by purpose.",
-      code: "html.p(Text(panelTitle))\nWhen(panelOpen, () => PanelRegion())"
+      code: "html.p(Text(panelTitle))\nWhen(panelOpen, () => PanelRegion(panelTitle))"
     }
   ];
 
@@ -233,17 +235,17 @@ function PatternsSection(): HTMLElement {
           html.strong(Text(panelStatus))
         ),
         html.button({ type: "button", onclick: () => panelOpen.update((value) => !value) }, "Toggle region"),
-        When(panelOpen, () => PanelRegion())
+        When(panelOpen, () => PanelRegion(panelTitle))
       ),
       html.div({ className: "pattern-list" }, patterns.map(PatternItem))
     )
   );
 }
 
-function PanelRegion(): HTMLElement {
+function PanelRegion(title: Readable<string>): HTMLElement {
   return html.div(
     { className: "mounted-region" },
-    html.h3(Text(panelTitle)),
+    html.h3(Text(title)),
     html.p("This block is inserted and removed from the DOM. Its nested bindings are cleaned up when it unmounts.")
   );
 }
