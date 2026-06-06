@@ -21,12 +21,19 @@ type Pattern = {
   code: string;
 };
 
+type ValueNote = {
+  title: string;
+  body: string;
+  code: string;
+};
+
 const appElement = html.div(
   { className: "site-shell" },
   SiteHeader(),
   html.main(
     HeroSection(),
     ExampleSection(),
+    ReactiveValuesSection(),
     ApiSection(),
     PatternsSection(),
     EscapeHatchSection()
@@ -46,6 +53,7 @@ function SiteHeader(): HTMLElement {
     html.nav(
       { className: "nav", "aria-label": "Documentation" },
       NavLink("Example", "#example"),
+      NavLink("Values", "#values"),
       NavLink("API", "#api"),
       NavLink("Patterns", "#patterns"),
       NavLink("DOM", "#dom")
@@ -121,6 +129,58 @@ dom.mount(
     )
   )
 );`)
+    )
+  );
+}
+
+function ReactiveValuesSection(): HTMLElement {
+  const notes: ValueNote[] = [
+    {
+      title: "Signals are object references",
+      body: "A signal is a small object you keep in a variable, pass to functions, return from helpers, and store alongside any other JavaScript value.",
+      code: `const room = signal("Kitchen");
+
+room.get();        // "Kitchen"
+room.set("Office");
+room.update((name) => name.trim());`
+    },
+    {
+      title: "Computed values are readable values",
+      body: "A computed value is another object with get and subscribe. It tracks the signals read while it runs, then tells subscribers when the derived value changes.",
+      code: `const title = computed(() => \`\${room.get()} panel\`);
+
+html.h3(Text(title));
+PanelRegion(title);`
+    },
+    {
+      title: "Use them like JavaScript values",
+      body: "There is no template syntax or special variable kind. The reactive object is just the thing you pass around; chico reads it when binding text, props, styles, and conditional DOM.",
+      code: `function PanelRegion(title: Readable<string>) {
+  return html.div(
+    html.h3(Text(title))
+  );
+}`
+    }
+  ];
+
+  return html.section(
+    { id: "values", className: "section values-section" },
+    SectionIntro(
+      "Reactive Values Are Plain Objects",
+      "chico does not add a hidden language on top of JavaScript. Dynamic values are object references with a few explicit methods."
+    ),
+    html.div(
+      { className: "values-layout" },
+      html.div(
+        { className: "values-copy" },
+        html.p(
+          "If you can pass an object to a function, put it in an array, or keep it in a closure, you can do the same with a signal or computed value."
+        ),
+        html.p(
+          "The only contract is small: read the current value with get, change writable state with set or update, and subscribe when something needs to react."
+        )
+      ),
+      html.div({ className: "value-list" }, notes.map(ValueNoteItem))
     )
   );
 }
@@ -307,6 +367,15 @@ function PatternItem(pattern: Pattern): HTMLElement {
     html.h3(pattern.title),
     html.p(pattern.body),
     CodeBlock(pattern.code)
+  );
+}
+
+function ValueNoteItem(note: ValueNote): HTMLElement {
+  return html.article(
+    { className: "value-note" },
+    html.h3(note.title),
+    html.p(note.body),
+    CodeBlock(note.code)
   );
 }
 
