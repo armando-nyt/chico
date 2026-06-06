@@ -329,14 +329,16 @@ function Mark(): SVGSVGElement {
 function DomDiagram(): SVGSVGElement {
   return svg.svg(
     { class: "dom-diagram", viewBox: "0 0 720 320", role: "img", "aria-label": "Signals update DOM nodes directly" },
-    svg.path({ class: "diagram-link", d: "M200 160 C270 78 374 78 446 160" }),
-    svg.path({ class: "diagram-link", d: "M200 160 C270 242 374 242 446 160" }),
+    svg.path({ class: "diagram-link", d: "M242 152 C304 104 372 104 446 104" }),
+    svg.path({ class: "diagram-link", d: "M242 166 C304 250 372 250 446 250" }),
     DiagramNode(72, 106, "signal", "state"),
     DiagramNode(446, 58, "Text", "node"),
     DiagramNode(446, 204, "html.div", "element"),
     svg.text({ class: "diagram-caption", x: 360, y: 168, "text-anchor": "middle" }, "fine-grained bindings"),
-    svg.circle({ class: "diagram-dot", cx: 206, cy: 160, r: 5 }),
-    svg.circle({ class: "diagram-dot", cx: 442, cy: 160, r: 5 })
+    svg.circle({ class: "diagram-dot", cx: 246, cy: 152, r: 5 }),
+    svg.circle({ class: "diagram-dot", cx: 446, cy: 104, r: 5 }),
+    svg.circle({ class: "diagram-dot", cx: 246, cy: 166, r: 5 }),
+    svg.circle({ class: "diagram-dot", cx: 446, cy: 250, r: 5 })
   );
 }
 
