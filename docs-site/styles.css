@@ -240,6 +240,7 @@ pre code {
 }
 
 .example-grid,
+.values-layout,
 .patterns-layout,
 .dom-proof {
   display: grid;
@@ -250,6 +251,8 @@ pre code {
 
 .live-example,
 .interactive-pattern,
+.values-copy,
+.value-note,
 .api-item,
 .pattern-item,
 .dom-proof > div {
@@ -259,7 +262,8 @@ pre code {
 }
 
 .live-example,
-.interactive-pattern {
+.interactive-pattern,
+.values-copy {
   padding: 22px;
 }
 
@@ -287,7 +291,13 @@ pre code {
   gap: 16px;
 }
 
+.value-list {
+  display: grid;
+  gap: 14px;
+}
+
 .api-item,
+.value-note,
 .pattern-item {
   display: grid;
   gap: 12px;
@@ -295,6 +305,7 @@ pre code {
 }
 
 .api-item h3,
+.value-note h3,
 .pattern-item h3,
 .mounted-region h3,
 .dom-proof h3 {
@@ -304,12 +315,19 @@ pre code {
 }
 
 .api-item p,
+.values-copy p,
+.value-note p,
 .pattern-item p,
 .mounted-region p,
 .dom-proof p {
   margin: 0;
   color: #52625c;
   line-height: 1.5;
+}
+
+.values-copy {
+  display: grid;
+  gap: 14px;
 }
 
 .pattern-list {
@@ -397,6 +415,7 @@ input {
   }
 
   .example-grid,
+  .values-layout,
   .patterns-layout,
   .dom-proof,
   .api-grid {
