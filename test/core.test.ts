@@ -114,6 +114,25 @@ describe("core DOM bindings", () => {
     dom.unmount(view);
   });
 
+  test("When remounts computed bindings with the latest value", () => {
+    const fixture = getFixture();
+    const open = signal(true);
+    const room = signal("Kitchen");
+    const title = computed(() => `${room.get()} panel`);
+    const view = html.div(When(open, () => html.p(Text(title))));
+
+    dom.mount(fixture, view);
+    expect(getParagraph(view).textContent).toBe("Kitchen panel");
+
+    open.set(false);
+    room.set("Office");
+    open.set(true);
+
+    expect(getParagraph(view).textContent).toBe("Office panel");
+
+    dom.unmount(view);
+  });
+
   test("directly mounted When unmounts its DOM and bindings", () => {
     const fixture = getFixture();
     const open = signal(true);

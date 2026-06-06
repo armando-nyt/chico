@@ -88,7 +88,10 @@ export function computed<T>(fn: () => T): Readable<T> {
       subscribers.add(subscriber);
       return () => {
         subscribers.delete(subscriber);
-        if (subscribers.size === 0) clearDependencies();
+        if (subscribers.size === 0) {
+          clearDependencies();
+          dirty = true;
+        }
       };
     }
   };
