@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
 
+const docsBase = process.env.DOCS_BASE ?? "/chico/";
+
 export default defineConfig({
-  base: "/chico/",
+  base: docsBase,
   build: {
     outDir: "../docs-dist",
     emptyOutDir: true

@@ -1,0 +1,142 @@
+name: Deploy PR docs preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: docs-preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: source
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: source
+
+      - name: Build docs
+        run: npm run docs:build
+        working-directory: source
+        env:
+          DOCS_BASE: /${{ github.event.repository.name }}/previews/pr-${{ github.event.pull_request.number }}/
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview-${{ github.event.pull_request.number }}
+          path: source/docs-dist
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-preview-${{ github.event.pull_request.number }}
+          path: docs-dist
+
+      - name: Deploy preview folder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          mkdir pages
+          cd pages
+          git init
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch --depth=1 origin gh-pages
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+          fi
+
+          preview_dir="previews/pr-${PR_NUMBER}"
+          rm -rf "$preview_dir"
+          mkdir -p "$preview_dir"
+          cp -R ../docs-dist/. "$preview_dir"/
+          touch .nojekyll
+
+          git add -A .nojekyll "$preview_dir"
+          if git diff --cached --quiet; then
+            echo "No preview changes to deploy."
+            exit 0
+          fi
+
+          git commit -m "Deploy docs preview for PR #${PR_NUMBER}"
+
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              exit 0
+            fi
+
+            git pull --rebase origin gh-pages
+          done
+
+          git push origin gh-pages
+
+      - name: Comment preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = "<!-- chico-docs-preview -->";
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://${context.repo.owner}.github.io/${context.repo.repo}/previews/pr-${prNumber}/`;
+            const body = `${marker}\nDocs preview: ${previewUrl}`;
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const existing = comments.data.find((comment) =>
+              comment.user?.type === "Bot" && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+            }
