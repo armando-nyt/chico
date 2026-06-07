@@ -241,6 +241,7 @@ pre code {
 
 .example-grid,
 .values-layout,
+.mechanics-layout,
 .patterns-layout,
 .dom-proof {
   display: grid;
@@ -252,7 +253,9 @@ pre code {
 .live-example,
 .interactive-pattern,
 .values-copy,
+.mechanics-copy,
 .value-note,
+.mechanic-step,
 .api-item,
 .pattern-item,
 .dom-proof > div {
@@ -263,7 +266,8 @@ pre code {
 
 .live-example,
 .interactive-pattern,
-.values-copy {
+.values-copy,
+.mechanics-copy {
   padding: 22px;
 }
 
@@ -296,8 +300,19 @@ pre code {
   gap: 14px;
 }
 
+.mechanics-layout.secondary {
+  margin-top: 18px;
+}
+
+.mechanics-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .api-item,
 .value-note,
+.mechanic-step,
 .pattern-item {
   display: grid;
   gap: 12px;
@@ -306,6 +321,8 @@ pre code {
 
 .api-item h3,
 .value-note h3,
+.mechanics-copy h3,
+.mechanic-step h3,
 .pattern-item h3,
 .mounted-region h3,
 .dom-proof h3 {
@@ -317,6 +334,8 @@ pre code {
 .api-item p,
 .values-copy p,
 .value-note p,
+.mechanics-copy p,
+.mechanic-step p,
 .pattern-item p,
 .mounted-region p,
 .dom-proof p {
@@ -326,6 +345,11 @@ pre code {
 }
 
 .values-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.mechanics-copy {
   display: grid;
   gap: 14px;
 }
@@ -416,9 +440,14 @@ input {
 
   .example-grid,
   .values-layout,
+  .mechanics-layout,
   .patterns-layout,
   .dom-proof,
   .api-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mechanics-steps {
     grid-template-columns: 1fr;
   }
 

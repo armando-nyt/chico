@@ -124,6 +124,119 @@ html.button()  // valid
 html.dvi()     // error
 ```
 
+The implementation should stay lazy. The proxy creates a factory only when a property is first accessed, then keeps that function in a small cache:
+
+```ts
+const factories = new Map()
+
+const html = new Proxy({}, {
+  get(_, tagName) {
+    if (!factories.has(tagName)) {
+      factories.set(tagName, (...args) => createElement(tagName, ...args))
+    }
+
+    return factories.get(tagName)
+  }
+})
+```
+
+That keeps the bundle from carrying hundreds of tag factory definitions. It also means newly standardized tags and custom elements work without a library release:
+
+```ts
+html.dialog(...)
+html.search(...)
+html["my-widget"](...)
+```
+
+Known HTML and SVG names can still be strongly typed, while the runtime stays open to every valid tag name the browser accepts.
+
+## Reactive Mechanisms
+
+Reactivity is explicit and fine-grained. A reactive value is any object with this small shape:
+
+```ts
+{
+  get(): T
+  subscribe(subscriber: () => void): () => void
+}
+```
+
+Signals, computed values, text bindings, prop bindings, style bindings, and conditional regions all build on that contract.
+
+### Signals
+
+A signal owns one current value and a set of subscriber callbacks:
+
+```ts
+const count = signal(0)
+
+count.get()
+count.set(1)
+count.update((n) => n + 1)
+count.subscribe(() => {
+  console.log(count.get())
+})
+```
+
+Calling `get()` returns the current value and participates in dependency tracking if a computed value or effect is currently running. Calling `set()` compares the next value with the current value using `Object.is`; if the value changed, all subscribers are called.
+
+### Dependency Tracking
+
+The library keeps one internal `activeObserver`.
+
+When a computed value or effect runs, chico temporarily sets `activeObserver` to that running observer. Any signal or computed value read during that time calls `track(source)`, which tells the active observer to depend on that source. When the function finishes, the previous observer is restored.
+
+This means dependencies are discovered from the code that actually ran:
+
+```ts
+const label = computed(() => {
+  if (open.get()) return title.get()
+  return "Closed"
+})
+```
+
+If `open` is false, `title` is not a dependency for that run. When the function runs again later, dependencies are cleared and collected again.
+
+### Computed Values
+
+A computed value is lazy derived state. It keeps:
+
+- the cached value
+- a dirty flag
+- subscribers
+- unsubscribe callbacks for its current dependencies
+
+The first `get()` runs the derivation and subscribes to every reactive value read during that run. When one of those dependencies changes, the computed value is marked dirty and its own subscribers are notified. The derivation runs again only when the value is read.
+
+When a computed value has no subscribers left, it clears its dependency subscriptions and marks itself dirty. That keeps unused derived values from staying connected to the graph.
+
+### Effects
+
+An effect is an eager reactive function:
+
+```ts
+const stop = effect(() => {
+  node.data = String(count.get())
+})
+```
+
+It runs immediately, records the reactive values it reads, and subscribes to them. When any dependency changes, the effect clears its old subscriptions and runs again. The returned stop function marks the effect as stopped and removes its subscriptions.
+
+Effects are how chico wires reactive values to DOM updates. They are used internally for text nodes, props, styles, and `When`.
+
+### DOM Cleanup
+
+Reactive DOM bindings attach their stop callbacks to the node they update. Event listeners are stored the same way. When `dom.unmount()` removes a node, chico walks the subtree and runs every cleanup callback it finds before removing the nodes from the document.
+
+That gives each DOM binding a clear owner:
+
+- a text binding belongs to its text node
+- a prop or style binding belongs to its element
+- an event listener belongs to its element
+- a conditional region belongs to its comment anchor
+
+Removing DOM removes the subscriptions and listeners tied to that DOM.
+
 ## Namespaces Over Flat APIs
 
 The library should prefer namespaces rather than exporting dozens of unrelated functions.
