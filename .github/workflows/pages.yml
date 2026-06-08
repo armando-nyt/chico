@@ -59,7 +59,7 @@ jobs:
             git checkout --orphan gh-pages
           fi
 
-          find . -mindepth 1 -maxdepth 1 ! -name ".git" ! -name "previews" -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name ".git" -exec rm -rf {} +
           cp -R ../source/docs-dist/. .
           touch .nojekyll
 
