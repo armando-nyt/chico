@@ -34,6 +34,7 @@ const appElement = html.div(
     HeroSection(),
     ExampleSection(),
     ReactiveValuesSection(),
+    MechanicsSection(),
     ApiSection(),
     PatternsSection(),
     EscapeHatchSection()
@@ -54,6 +55,7 @@ function SiteHeader(): HTMLElement {
       { className: "nav", "aria-label": "Documentation" },
       NavLink("Example", "#example"),
       NavLink("Values", "#values"),
+      NavLink("Mechanics", "#mechanics"),
       NavLink("API", "#api"),
       NavLink("Patterns", "#patterns"),
       NavLink("DOM", "#dom")
@@ -181,6 +183,71 @@ PanelRegion(title);`
         )
       ),
       html.div({ className: "value-list" }, notes.map(ValueNoteItem))
+    )
+  );
+}
+
+function MechanicsSection(): HTMLElement {
+  const steps = [
+    {
+      title: "Track reads",
+      body: "While a computed value or effect runs, chico records every signal or computed value read with get."
+    },
+    {
+      title: "Notify dependents",
+      body: "Signals call subscribers when set or update changes the stored value. Computed values mark themselves dirty."
+    },
+    {
+      title: "Update exact nodes",
+      body: "Effects update the text node, prop, style, or conditional region that owns the binding."
+    },
+    {
+      title: "Clean on unmount",
+      body: "Unmounting walks the removed subtree and stops subscriptions and event listeners attached to those nodes."
+    }
+  ];
+
+  return html.section(
+    { id: "mechanics", className: "section mechanics-section" },
+    SectionIntro(
+      "How Reactivity Works",
+      "The reactive core is a small dependency graph. Reads collect dependencies, writes notify subscribers, and DOM bindings update the specific node they own."
+    ),
+    html.div(
+      { className: "mechanics-layout" },
+      html.div(
+        { className: "mechanics-copy" },
+        html.h3("Dependency tracking"),
+        html.p(
+          "chico keeps one active observer while a computed value or effect is running. Every reactive get call reports itself to that observer."
+        ),
+        html.p(
+          "Each rerun clears the old subscriptions first, so the graph follows the branch of code that actually ran."
+        ),
+        CodeBlock(`const label = computed(() => {
+  if (open.get()) return title.get();
+  return "Closed";
+});`)
+      ),
+      html.div({ className: "mechanics-steps" }, steps.map(MechanicStep))
+    ),
+    html.div(
+      { className: "mechanics-layout secondary" },
+      html.div(
+        { className: "mechanics-copy" },
+        html.h3("Lazy tag factories"),
+        html.p(
+          "html.* and svg.* use a Proxy. A factory is created the first time a tag is accessed, then cached for the next call."
+        ),
+        html.p(
+          "That supports all valid HTML, SVG, and custom element tag names without shipping a bundle full of predeclared functions."
+        )
+      ),
+      CodeBlock(`html.dialog("Native dialog");
+html.search({ role: "search" }, input);
+html["my-widget"]({ value: count });
+
+svg.circle({ cx: 10, cy: 10, r: 4 });`)
     )
   );
 }
@@ -367,6 +434,14 @@ function PatternItem(pattern: Pattern): HTMLElement {
     html.h3(pattern.title),
     html.p(pattern.body),
     CodeBlock(pattern.code)
+  );
+}
+
+function MechanicStep(step: { title: string; body: string }): HTMLElement {
+  return html.article(
+    { className: "mechanic-step" },
+    html.h3(step.title),
+    html.p(step.body)
   );
 }
 
