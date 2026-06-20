@@ -11,6 +11,10 @@ import {
   signal,
   svg,
 } from "../src/index.js";
+import { Text as BindingText, When as BindingWhen } from "../src/bindings/index.js";
+import { mount as mountFromDom } from "../src/dom/index.js";
+import { html as htmlFromElements } from "../src/elements/index.js";
+import { signal as signalFromReactive } from "../src/reactive/index.js";
 
 beforeEach(() => {
   document.body.innerHTML = "<div id=\"fixture\"></div>";
@@ -36,6 +40,16 @@ void cssStyleProps;
 void jsStyleProps;
 
 describe("core DOM bindings", () => {
+  test("deep module facades expose focused library entry points", () => {
+    const fixture = getFixture();
+    const open = signalFromReactive(true);
+    const view = htmlFromElements.div(BindingWhen(open, () => htmlFromElements.p(BindingText("Ready"))));
+
+    mountFromDom(fixture, view);
+
+    expect(fixture.textContent).toBe("Ready");
+  });
+
   test("Text updates only its text node", () => {
     const fixture = getFixture();
     const count = signal(0);

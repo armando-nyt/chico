@@ -61,6 +61,16 @@ When(panelOpen, () => PanelRegion())
 - `createElement(tagName, ...args)` creates an HTML element directly.
 - `createElementNS(namespaceURI, tagName, ...args)` creates a namespaced element directly.
 
+The root module exports the complete public API. Focused entry points are also
+available when you want to import by responsibility:
+
+```ts
+import { Text, When } from "chico/bindings";
+import { dom } from "chico/dom";
+import { html } from "chico/elements";
+import { computed, signal } from "chico/reactive";
+```
+
 Element factories accept either props followed by children or children directly:
 
 ```ts
