@@ -34,6 +34,7 @@ const appElement = html.div(
     HeroSection(),
     ExampleSection(),
     ReactiveValuesSection(),
+    BuildingBlocksSection(),
     MechanicsSection(),
     ApiSection(),
     PatternsSection(),
@@ -55,6 +56,7 @@ function SiteHeader(): HTMLElement {
       { className: "nav", "aria-label": "Documentation" },
       NavLink("Example", "#example"),
       NavLink("Values", "#values"),
+      NavLink("Blocks", "#building-blocks"),
       NavLink("Mechanics", "#mechanics"),
       NavLink("API", "#api"),
       NavLink("Patterns", "#patterns"),
@@ -183,6 +185,57 @@ PanelRegion(title);`
         )
       ),
       html.div({ className: "value-list" }, notes.map(ValueNoteItem))
+    )
+  );
+}
+
+function BuildingBlocksSection(): HTMLElement {
+  const blocks = [
+    {
+      title: "Reactive values",
+      body: "Signals and computed values hold state and expose one small readable contract. They do not know about the DOM; they only let other code read, write, and subscribe.",
+      code: `const count = signal(0);
+const label = computed(() => \`Count: \${count.get()}\`);`
+    },
+    {
+      title: "Element factories",
+      body: "html.*, svg.*, and the createElement helpers turn tags, props, and children into real browser nodes. They are the construction layer, not a renderer.",
+      code: `const button = html.button(
+  { type: "button", onclick: increment },
+  "Increment"
+);`
+    },
+    {
+      title: "DOM operations",
+      body: "The dom helpers append, replace, and remove nodes while preserving chico's cleanup rules. They keep ownership of teardown close to the nodes being removed.",
+      code: `dom.mount(root, view);
+dom.replace(root, oldView, nextView);
+dom.unmount(view);`
+    },
+    {
+      title: "Bindings",
+      body: "Bindings connect readable values to specific DOM effects: one text node, one prop, one style declaration, or one conditional region.",
+      code: `html.p(Text(label));
+When(open, () => PanelRegion());`
+    }
+  ];
+
+  return html.section(
+    { id: "building-blocks", className: "section blocks-section" },
+    SectionIntro(
+      "Building Blocks",
+      "chico is organized around a few stable responsibilities. The internal files can move around, but these layers explain how the pieces cooperate."
+    ),
+    html.div(
+      { className: "blocks-layout" },
+      html.div(
+        { className: "blocks-flow" },
+        FlowStep("1", "Create state", "Signals and computed values describe what can change."),
+        FlowStep("2", "Create nodes", "Element factories produce ordinary HTML and SVG nodes."),
+        FlowStep("3", "Bind changes", "Bindings subscribe to readable values and update exact DOM targets."),
+        FlowStep("4", "Clean up", "DOM operations remove nodes and stop the work attached to them.")
+      ),
+      html.div({ className: "block-list" }, blocks.map(BuildingBlockItem))
     )
   );
 }
@@ -451,6 +504,23 @@ function ValueNoteItem(note: ValueNote): HTMLElement {
     html.h3(note.title),
     html.p(note.body),
     CodeBlock(note.code)
+  );
+}
+
+function BuildingBlockItem(block: ValueNote): HTMLElement {
+  return html.article(
+    { className: "building-block" },
+    html.h3(block.title),
+    html.p(block.body),
+    CodeBlock(block.code)
+  );
+}
+
+function FlowStep(index: string, title: string, body: string): HTMLElement {
+  return html.article(
+    { className: "flow-step" },
+    html.span({ className: "flow-index" }, index),
+    html.div(html.h3(title), html.p(body))
   );
 }
 

@@ -241,6 +241,7 @@ pre code {
 
 .example-grid,
 .values-layout,
+.blocks-layout,
 .mechanics-layout,
 .patterns-layout,
 .dom-proof {
@@ -254,7 +255,9 @@ pre code {
 .interactive-pattern,
 .values-copy,
 .mechanics-copy,
+.blocks-flow,
 .value-note,
+.building-block,
 .mechanic-step,
 .api-item,
 .pattern-item,
@@ -300,6 +303,36 @@ pre code {
   gap: 14px;
 }
 
+.blocks-flow {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.block-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.flow-step {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.flow-index {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #1f6f52;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .mechanics-layout.secondary {
   margin-top: 18px;
 }
@@ -312,6 +345,7 @@ pre code {
 
 .api-item,
 .value-note,
+.building-block,
 .mechanic-step,
 .pattern-item {
   display: grid;
@@ -321,6 +355,8 @@ pre code {
 
 .api-item h3,
 .value-note h3,
+.building-block h3,
+.flow-step h3,
 .mechanics-copy h3,
 .mechanic-step h3,
 .pattern-item h3,
@@ -334,6 +370,8 @@ pre code {
 .api-item p,
 .values-copy p,
 .value-note p,
+.building-block p,
+.flow-step p,
 .mechanics-copy p,
 .mechanic-step p,
 .pattern-item p,
@@ -347,6 +385,16 @@ pre code {
 .values-copy {
   display: grid;
   gap: 14px;
+}
+
+.flow-step h3,
+.flow-step p {
+  margin: 0;
+}
+
+.flow-step div {
+  display: grid;
+  gap: 5px;
 }
 
 .mechanics-copy {
@@ -440,6 +488,7 @@ input {
 
   .example-grid,
   .values-layout,
+  .blocks-layout,
   .mechanics-layout,
   .patterns-layout,
   .dom-proof,
@@ -448,6 +497,10 @@ input {
   }
 
   .mechanics-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .block-list {
     grid-template-columns: 1fr;
   }
 
