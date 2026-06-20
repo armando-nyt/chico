@@ -95,6 +95,9 @@ DOM bindings are built on top of effects:
 - `When(condition, render)` uses comment anchors to insert and remove real DOM nodes.
 - `dom.unmount()` walks the removed subtree and runs cleanup callbacks, so event listeners and reactive subscriptions are stopped with the nodes that own them.
 
+For a fuller explanation of dependency tracking, including why chico uses one
+temporary `activeObserver`, see [docs/reactivity.md](docs/reactivity.md).
+
 ## Lazy tag factories
 
 `html.*` and `svg.*` are backed by a `Proxy`. Instead of shipping one function definition for every valid tag, chico creates each factory the first time it is accessed and caches it:
