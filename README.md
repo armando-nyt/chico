@@ -145,3 +145,34 @@ mise exec -- npm test
 npm run typecheck
 npm run build
 ```
+
+## Install
+
+Chico is intended to stay small enough to read, own, and vendor.
+
+The canonical releases are git tags. To depend on a tagged version directly from
+GitHub:
+
+```json
+{
+  "dependencies": {
+    "chico": "github:armando-nyt/chico#v0.1.0"
+  }
+}
+```
+
+Then import from the root module or a focused entry point:
+
+```ts
+import { computed, dom, html, signal } from "chico";
+import { Text, When } from "chico/bindings";
+```
+
+You can also vendor the source into a project and record the version you copied:
+
+```txt
+Vendored from chico v0.1.0
+```
+
+See [VERSIONING.md](VERSIONING.md) for the versioning strategy and release
+process.

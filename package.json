@@ -4,6 +4,12 @@
   "type": "module",
   "private": true,
   "description": "A tiny DOM-first reactive UI library prototype.",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "VERSIONING.md"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -33,6 +39,7 @@
     "docs:build": "vite build --config vite.docs.config.ts",
     "docs:dev": "vite --config vite.docs.config.ts --host 127.0.0.1 --port 5174",
     "docs:preview": "vite preview --config vite.docs.config.ts --host 127.0.0.1 --port 4174",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
