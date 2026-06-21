@@ -9,19 +9,27 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-production
+  group: pages
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: source
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -38,45 +46,11 @@ jobs:
         env:
           DOCS_BASE: /${{ github.event.repository.name }}/
 
-      - name: Deploy production docs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: source/docs-dist
 
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          mkdir pages
-          cd pages
-          git init
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-
-          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
-            git fetch --depth=1 origin gh-pages
-            git checkout gh-pages
-          else
-            git checkout --orphan gh-pages
-          fi
-
-          find . -mindepth 1 -maxdepth 1 ! -name ".git" -exec rm -rf {} +
-          cp -R ../source/docs-dist/. .
-          touch .nojekyll
-
-          git add -A .
-          if git diff --cached --quiet; then
-            echo "No production docs changes to deploy."
-            exit 0
-          fi
-
-          git commit -m "Deploy production docs"
-
-          for attempt in 1 2 3; do
-            if git push origin gh-pages; then
-              exit 0
-            fi
-
-            git pull --rebase origin gh-pages
-          done
-
-          git push origin gh-pages
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
